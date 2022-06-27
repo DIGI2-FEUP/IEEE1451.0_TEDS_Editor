@@ -14,7 +14,7 @@
 from PyQt5 import QtWidgets, QtCore
 import sys
 from teds_editor import Ui_editorMainWindow
-from  teds_data_model import META_TEDS_TYPES, Meta_TEDS_Data_Block
+from  teds_data_model import Meta_TEDS_Data_Block, Meta_TEDS_Data_Block
 import teds_utils
 
 # Create meta teds model
@@ -38,15 +38,15 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.ui.metaTedsTable.setColumnWidth(1, 200)
         self.ui.metaTedsTable.setRowCount(9)
         # Set field description
-        self.ui.metaTedsTable.setItem(0, 0, QtWidgets.QTableWidgetItem(META_TEDS_TYPES.UUID[2]))
-        self.ui.metaTedsTable.setItem(1, 0, QtWidgets.QTableWidgetItem(META_TEDS_TYPES.OholdOff[2]))
-        self.ui.metaTedsTable.setItem(2, 0, QtWidgets.QTableWidgetItem(META_TEDS_TYPES.SHoldOff[2]))
-        self.ui.metaTedsTable.setItem(3, 0, QtWidgets.QTableWidgetItem(META_TEDS_TYPES.TestTime[2]))
-        self.ui.metaTedsTable.setItem(4, 0, QtWidgets.QTableWidgetItem(META_TEDS_TYPES.MaxChan[2]))
-        self.ui.metaTedsTable.setItem(5, 0, QtWidgets.QTableWidgetItem(META_TEDS_TYPES.CGroup[2]))
-        self.ui.metaTedsTable.setItem(6, 0, QtWidgets.QTableWidgetItem(META_TEDS_TYPES.VGroup[2]))
-        self.ui.metaTedsTable.setItem(7, 0, QtWidgets.QTableWidgetItem(META_TEDS_TYPES.GeoLoc[2]))
-        self.ui.metaTedsTable.setItem(8, 0, QtWidgets.QTableWidgetItem(META_TEDS_TYPES.Proxies[2]))
+        self.ui.metaTedsTable.setItem(0, 0, QtWidgets.QTableWidgetItem(Meta_TEDS_Data_Block.UUID[2]))
+        self.ui.metaTedsTable.setItem(1, 0, QtWidgets.QTableWidgetItem(Meta_TEDS_Data_Block.OholdOff[2]))
+        self.ui.metaTedsTable.setItem(2, 0, QtWidgets.QTableWidgetItem(Meta_TEDS_Data_Block.SHoldOff[2]))
+        self.ui.metaTedsTable.setItem(3, 0, QtWidgets.QTableWidgetItem(Meta_TEDS_Data_Block.TestTime[2]))
+        self.ui.metaTedsTable.setItem(4, 0, QtWidgets.QTableWidgetItem(Meta_TEDS_Data_Block.MaxChan[2]))
+        self.ui.metaTedsTable.setItem(5, 0, QtWidgets.QTableWidgetItem(Meta_TEDS_Data_Block.CGroup[2]))
+        self.ui.metaTedsTable.setItem(6, 0, QtWidgets.QTableWidgetItem(Meta_TEDS_Data_Block.VGroup[2]))
+        self.ui.metaTedsTable.setItem(7, 0, QtWidgets.QTableWidgetItem(Meta_TEDS_Data_Block.GeoLoc[2]))
+        self.ui.metaTedsTable.setItem(8, 0, QtWidgets.QTableWidgetItem(Meta_TEDS_Data_Block.Proxies[2]))
 
         for i in range(self.ui.metaTedsTable.rowCount()):
             item = self.ui.metaTedsTable.item(i, 0)
@@ -64,11 +64,11 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         # Get table uuid cell
         uuid_cell = self.ui.metaTedsTable.item(0, 1)
         # Display uuid as string, int not working
-        uuid_cell.setData(QtCore.Qt.DisplayRole, meta_teds.uuid.hex())
+        uuid_cell.setData(QtCore.Qt.DisplayRole, meta_teds.uuid_field.get_value().hex())
 
     def saveBin(self):
         # Name the file with uuid from meta teds
-        metaTedsFile = open(meta_teds.uuid.hex()+".bin", "wb")
+        metaTedsFile = open(meta_teds.uuid_field.get_value().hex()+".bin", "wb")
         metaTedsFile.write(meta_teds.to_bytes())
 
 def metaTedsTableChange(item):
