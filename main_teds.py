@@ -14,7 +14,7 @@
 from PyQt5 import QtWidgets, QtCore
 import sys
 from teds_editor import Ui_editorMainWindow
-from  teds_data_model import Meta_TEDS_Data_Block, Meta_TEDS_Data_Block
+from  teds_data_model import Meta_TEDS_Data_Block, Meta_TEDS_Data_Block, TransducerChannel_TEDS_Data_Block
 import teds_utils
 
 # Create meta teds model
@@ -28,6 +28,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.ui = Ui_editorMainWindow()
         self.ui.setupUi(self)
         self.loadTedsMetaTable()
+        self.loadChannelTeds()
         # Register handle for Generate UUID btn
         self.ui.pushButton.clicked.connect(self.generateUUID)
         # Register handle for Save .bin action
@@ -57,6 +58,26 @@ class ApplicationWindow(QtWidgets.QMainWindow):
             self.ui.metaTedsTable.setItem(i, 1, blankItem)
             # Callback function to catch item changes
         self.ui.metaTedsTable.itemChanged.connect(metaTedsTableChange)
+
+    def loadChannelTeds(self):
+        tctdb = TransducerChannel_TEDS_Data_Block()
+        self.ui.transducerChannelTable.setColumnWidth(0, 400)
+        self.ui.transducerChannelTable.setColumnWidth(1, 200)
+        self.ui.transducerChannelTable.setRowCount(len(tctdb.fields))
+        # Set field description
+        i = 0
+        for field in tctdb.fields:
+            self.ui.transducerChannelTable.setItem(i, 0, QtWidgets.QTableWidgetItem(field.get_description()))
+            i += 1
+
+        for i in range(self.ui.transducerChannelTable.rowCount()):
+            item = self.ui.transducerChannelTable.item(i, 0)
+            # Make this item not editable
+            item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
+            blankItem = QtWidgets.QTableWidgetItem()
+            blankItem.setData(QtCore.Qt.EditRole, 0)
+            self.ui.transducerChannelTable.setItem(i, 1, blankItem)
+            # Callback function to catch item changes
 
     def generateUUID(self):
         # Data model generate new uuid
