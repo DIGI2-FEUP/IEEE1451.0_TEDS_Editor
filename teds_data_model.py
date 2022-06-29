@@ -173,7 +173,7 @@ class TEDS_Field():
     # If iven value has the correct type, do not cast it
     def set_value(self, value):
         if type(value) != type(self.data_type):
-            self.value = self.data_type.__class__(value)
+            self.value = value.astype(self.data_type.dtype)
         else:
             self.value = value
 

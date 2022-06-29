@@ -19,6 +19,8 @@ import teds_utils
 
 # Create meta teds model
 meta_teds = Meta_TEDS_Data_Block()
+# Create channel teds model
+channel_teds = TransducerChannel_TEDS_Data_Block()
 
 class ApplicationWindow(QtWidgets.QMainWindow):
 
@@ -61,17 +63,17 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.ui.metaTedsTable.itemChanged.connect(metaTedsTableChange)
 
     def loadChannelTeds(self):
-        tctdb = TransducerChannel_TEDS_Data_Block()
         self.ui.transducerChannelTable.setColumnWidth(0, 400)
         self.ui.transducerChannelTable.setColumnWidth(1, 200)
-        self.ui.transducerChannelTable.setRowCount(len(tctdb.fields))
+        self.ui.transducerChannelTable.setRowCount(len(channel_teds.fields))
         # Set field description
-        i = 0
-        for field in tctdb.fields:
+        for i in range(0,len(channel_teds.fields)):
+            field = channel_teds.fields[i]
             if field.enum :
                 # If the TEDS field domain is an enumeration, use a combobox
                 # Use the enumeration to fill the combobox with values
-                combo = QtWidgets.QComboBox()
+                combo = QtWidgets.QComboBox()                
+                combo.currentTextChanged.connect(lambda value, index=i: channelTedsComboBoxChanged(value, index))
                 for value in field.enum:
                     combo.addItem(value.name)
                 self.ui.transducerChannelTable.setCellWidget(i,1,combo)
@@ -85,9 +87,9 @@ class ApplicationWindow(QtWidgets.QMainWindow):
             # Make the description not editable
             item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
             self.ui.transducerChannelTable.setItem(i, 0, item)
-            i += 1
 
         # Callback function to catch item changes
+        self.ui.transducerChannelTable.itemChanged.connect(metaTedsTableChange)
 
     def generateUUID(self):
         # Data model generate new uuid
@@ -114,6 +116,17 @@ def metaTedsTableChange(item):
             meta_teds.set_test_time(item.data(QtCore.Qt.DisplayRole))
         elif item.row() == 4:
             meta_teds.set_max_chan(item.data(QtCore.Qt.DisplayRole))
+
+def channelTedsComboBoxChanged(value, index):
+    #print(value)
+    #print(index)
+    new_value = channel_teds.fields[index].enum[value].value
+    channel_teds.fields[index].set_value(new_value)
+    print(channel_teds.fields[index].value)
+
+
+def channelTedsTableChange(item):
+    print(item.row())
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
