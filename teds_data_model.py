@@ -13,6 +13,7 @@
 
 #from ctypes import sizeof
 import enum
+from re import I
 import uuid
 import enum
 import teds_utils
@@ -94,6 +95,7 @@ class TEDS_Identifier_Structure():
         self.version = 0x01
         #TO-DO
         self.tuple_length = 0x01
+        self.enum = None
 
     def get_type(self):
         return self.type
@@ -141,6 +143,7 @@ class TEDS_Field():
         self.length = uint8(n_octets)
         self.value = None
         self.tlv = None
+        self.enum = None
 
     def get_type(self):
         return self.type
@@ -161,6 +164,10 @@ class TEDS_Field():
     def get_total_length(self):
         # Fixed length of 4 octects for this structure
         return self.get_value_length()+TL_OCTETS
+
+    def set_value_enum(self,enum):
+        # If the value is based in an enumeration, keep a reference
+        self.enum = enum
 
     # Use reflection to cast the given value to the field data type
     # If iven value has the correct type, do not cast it
@@ -384,7 +391,7 @@ class TransducerChannel_TEDS_Data_Block():
         TIM_CAL_SUPPLIED = 4
         TIM_CAL_SELF = 5
         TIM_CAL_CUSTOM = 6
-
+    
     # As in Table 50—Enumeration of TransducerChannel types
     class TRANSDUCER_CHAN_TYPE(enum.IntEnum):
         SENSOR = 0
@@ -397,9 +404,99 @@ class TransducerChannel_TEDS_Data_Block():
         SELF_TEST_PROVIDED = 1
 
     # As in Table 52—Enumeration of data models
-    class SELF_TEST_KEY(enum.IntEnum):
-        NO_SELF_TEST = 0
-        SELF_TEST_PROVIDED = 1
+    class DATA_MODELS(enum.IntEnum):
+        N_OCTET_INTEGER = 0
+        SINGLE_PRECISION_REAL = 1
+        DOUBLE_PRECISION_REAL = 2
+        N_OCTET_FRACTION = 3
+        BIT_SEQUENCE = 4
+        LONG_INTEGER = 5
+        LONG_FRACTION = 6
+        TIME_INSTANCE = 7
+
+    # As in Table 53—Enumeration of sample time sources
+    class SAMPLE_TIME_SOURCES(enum.IntEnum):
+        NO_HELP = 0
+        INCOMING = 1
+        OUTGOING = 2
+        MINTERVAL = 3
+        SINTERVAL = 4
+        TODSENSE = 5
+
+    # As in Table 54—Sampling mode capability attribute
+    # TO-DO: Each sampling mode represents a bit from lsb to msb
+    # For this to be correct all combinations must be available
+    class SAMPLING_MODE_CAPABILITY(enum.IntEnum):
+        TRIGGER_INITIATED = 1
+        FREE_RUNNING = 2
+        FREE_RUN_PRE_TRIGGER = 4
+        CONTINUOUS_SAMPLING = 8
+        IMMEDIATE_SAMPLING = 16
+        ALL_MODES = 31
+    
+    # As in Table 55—Default sampling mode attribute
+    class DEFAULT_SAMPLING_MODE(enum.IntEnum):
+        TRIGGER_INITIATED = 1
+        FREE_RUNNING = 2
+        FREE_RUN_PRE_TRIGGER = 4
+        CONTINUOUS_SAMPLING = 8
+        IMMEDIATE_OPERATION = 16
+        
+    # As in Table 56—Buffered attribute
+    class BUFFERED_ATTRIBUTE(enum.IntEnum):
+        NO_MORE_THAN_ONE_BUFFER = 0
+        MULTIPLE_BUFFER_ONLY_BUFFER_MODE = 1
+        MULTIPLE_BUFFER_DEFAULT_UNBUFFERED_MODE = 2
+        MULTIPLE_BUFFER_DEFAULT_BUFFERED_MODE = 3
+
+    # As in Table 57—End-of-data-set operation attribute
+    class END_OF_DATA_SET_ATTRIBUTE(enum.IntEnum):
+        NOT_APPLICABLE = 0
+        HOLD = 1
+        RECIRCULATE = 2
+        DEFAULT_HOLD_OR_RECIRCULATE = 3
+        DEFAULT_RECIRCULATE_OR_HOLD = 4
+
+    # As in Table 58—Data transmission attribute
+    class DATA_TRANSMISSION_ATTRIBUTE(enum.IntEnum):
+        ONLY_WHEN_COMMANDED = 0
+        BUFFER_FULL_OR_COMMANDED = 1
+        FIXED_INTERVAL_OR_COMMANDED = 2
+        ALL_MODES = 3
+
+    # As in Table 59—Edge-to-report options
+    class EDGE_TO_REPORT(enum.IntEnum):
+        NOT_APPLICABLE = 0
+        RISING_EDGE = 1
+        FALLING_EDGE = 2
+        BOTH_EDGES = 3
+        BOTH_EDGES_DEFAULT_RISING = 5
+        BOTH_EDGES_DEFAULT_FALLING = 6
+        BOTH_EDGES_DEFAULT_BOTH = 7
+
+    # As in Table 61—Sensitivity direction enumeration
+    class SENSITIVITY_DIRECTION(enum.IntEnum):
+        NOT_APPLICABLE = 0
+        PLUS_X = 1
+        MINUS_X = 2
+        PLUS_Y = 3
+        MINUS_Y = 4
+        PLUS_Z = 5
+        MINUS_Z = 6
+
+    # As in Table 60—Actuator-halt operations
+    class ACTUATOR_HALT_OPERATIONS(enum.IntEnum):
+        NOT_APPLICABLE = 0
+        HALT_IMMEDIATE = 1
+        HALT_END_DATA_SET = 2
+        RAMP_TO_PREDEFINED_STATE = 3
+
+    # As in Table 62—Event sensor options
+    class EVENT_SENSOR_OPTIONS(enum.IntEnum):
+        NOT_APPLICABLE = 0
+        NOT_CHANGEABLE = 1
+        CHANGEABLE_INCONSISTENCIES_DETECTED = 2
+        CHANGEABLE_INCONSISTENCIES_NOT_DETECTED = 3
 
     def __init__(self):
         self.fields = []
@@ -409,10 +506,12 @@ class TransducerChannel_TEDS_Data_Block():
 
         # TransducerChannel related information
         self.CalKey = TEDS_Field(10,"CalKey","Calibration key",uint8,1)
-        self.CalKey.set_value(0)
+        self.CalKey.set_value_enum(self.CALIBRATION_KEYS)
+        self.CalKey.set_value(self.CALIBRATION_KEYS.CAL_NONE)
         self.fields.append(self.CalKey)
         self.ChanType = TEDS_Field(11,"ChanType","TransducerChannel type key",uint8,1)
-        self.ChanType.set_value(0)
+        self.ChanType.set_value_enum(self.TRANSDUCER_CHAN_TYPE)
+        self.ChanType.set_value(self.TRANSDUCER_CHAN_TYPE.SENSOR)
         self.fields.append(self.ChanType)
         self.PhyUnits = TEDS_Field(12,"PhyUnits","Physical Units",UNITS_TEDS_Data_Block,11)
         self.PhyUnits.set_value(0)
@@ -427,7 +526,8 @@ class TransducerChannel_TEDS_Data_Block():
         self.OError.set_value(0)
         self.fields.append(self.OError)
         self.SelfTest = TEDS_Field(16,"SelfTest","Self-test key",uint8,1)
-        self.SelfTest.set_value(0)
+        self.SelfTest.set_value_enum(self.SELF_TEST_KEY)
+        self.SelfTest.set_value(self.SELF_TEST_KEY.NO_SELF_TEST)
         self.fields.append(self.SelfTest)
         self.MRange = TEDS_Field(17,"MRange","Multi-range capability",uint8,1)
         self.MRange.set_value(0)
@@ -435,7 +535,8 @@ class TransducerChannel_TEDS_Data_Block():
         # Data converter-related information — —
         #18 Sample — —
         self.DatModel = TEDS_Field(40,"DatModel","Data model",uint8,1)
-        self.DatModel.set_value(0)
+        self.DatModel.set_value_enum(self.DATA_MODELS)
+        self.DatModel.set_value(self.DATA_MODELS.BIT_SEQUENCE)
         self.fields.append(self.DatModel)
         self.ModLenth = TEDS_Field(41,"ModLenth","Data model length",uint8,1)
         self.ModLenth.set_value(0)
@@ -483,7 +584,8 @@ class TransducerChannel_TEDS_Data_Block():
         self.fields.append(self.TestTime)
         # Time of the sample information
         self.TimeSrc = TEDS_Field(27,"TimeSrc","Source for the time of sample",uint8,1)
-        self.TimeSrc.set_value(0)
+        self.TimeSrc.set_value_enum(self.SAMPLE_TIME_SOURCES)
+        self.TimeSrc.set_value(self.SAMPLE_TIME_SOURCES.NO_HELP)
         self.fields.append(self.TimeSrc)
         self.InPropDl = TEDS_Field(28,"InPropDl","Incoming propagation delay through the data transport logic",float32,4)
         self.InPropDl.set_value(0)
@@ -497,36 +599,45 @@ class TransducerChannel_TEDS_Data_Block():
         # Attributes
         #31 Sampling Sampling attribute — —
         self.SampMode = TEDS_Field(48,"SampMode","Sampling mode capability",uint8,1)
-        self.SampMode.set_value(0)
+        self.SampMode.set_value_enum(self.SAMPLING_MODE_CAPABILITY)
+        self.SampMode.set_value(self.SAMPLING_MODE_CAPABILITY.ALL_MODES)
         self.fields.append(self.SampMode)
         self.SDefault = TEDS_Field(49,"SDefault","Default sampling mode",uint8,1)
-        self.SDefault.set_value(0)
+        self.SDefault.set_value_enum(self.DEFAULT_SAMPLING_MODE)
+        self.SDefault.set_value(self.DEFAULT_SAMPLING_MODE.IMMEDIATE_OPERATION)
         self.fields.append(self.SDefault)
         self.DataXmit = TEDS_Field(32,"DataXmit","Data transmission attribute",uint8,1)
-        self.DataXmit.set_value(0)
+        self.DataXmit.set_value_enum(self.DATA_TRANSMISSION_ATTRIBUTE)
+        self.DataXmit.set_value(self.DATA_TRANSMISSION_ATTRIBUTE.ONLY_WHEN_COMMANDED)
         self.fields.append(self.DataXmit)
         self.Buffered = TEDS_Field(33,"Buffered","Buffered attribute",uint8,1)
-        self.Buffered.set_value(0)
+        self.Buffered.set_value_enum(self.BUFFERED_ATTRIBUTE)
+        self.Buffered.set_value(self.BUFFERED_ATTRIBUTE.NO_MORE_THAN_ONE_BUFFER)
         self.fields.append(self.Buffered)
         self.EndOfSet = TEDS_Field(34,"EndOfSet","End-of-data-set operation attribute",uint8,1)
-        self.EndOfSet.set_value(0)
+        self.EndOfSet.set_value_enum(self.END_OF_DATA_SET_ATTRIBUTE)
+        self.EndOfSet.set_value(self.END_OF_DATA_SET_ATTRIBUTE.NOT_APPLICABLE)
         self.fields.append(self.EndOfSet)
         self.EdgeRpt = TEDS_Field(35,"EdgeRpt","Edge-to-report attribute",uint8,1)
-        self.EdgeRpt.set_value(0)
+        self.EdgeRpt.set_value_enum(self.EDGE_TO_REPORT)
+        self.EdgeRpt.set_value(self.EDGE_TO_REPORT.NOT_APPLICABLE)
         self.fields.append(self.EdgeRpt)
         self.ActHalt = TEDS_Field(36,"ActHalt","Actuator-halt attribute",uint8,1)
-        self.ActHalt.set_value(0)
+        self.ActHalt.set_value_enum(self.ACTUATOR_HALT_OPERATIONS)
+        self.ActHalt.set_value(self.ACTUATOR_HALT_OPERATIONS.NOT_APPLICABLE)
         self.fields.append(self.ActHalt)
         # Sensitivity
         self.Directon = TEDS_Field(37,"Directon","Sensitivity direction",float32,4)
-        self.Directon.set_value(0)
+        self.Directon.set_value_enum(self.SENSITIVITY_DIRECTION)
+        self.Directon.set_value(self.SENSITIVITY_DIRECTION.NOT_APPLICABLE)
         self.fields.append(self.Directon)
         self.DAngles = TEDS_Field(38,"DAngles","Direction angles Two",float32,8)
         self.DAngles.set_value(0)
         self.fields.append(self.DAngles)
         # Options
         self.ESOption = TEDS_Field(39,"ESOption","Event sensor options",uint8,1)
-        self.ESOption.set_value(0)
+        self.ESOption.set_value_enum(self.EVENT_SENSOR_OPTIONS)
+        self.ESOption.set_value(self.EVENT_SENSOR_OPTIONS.NOT_APPLICABLE)
         self.fields.append(self.ESOption)
 
 # ba = Meta_TEDS_Data_Block()

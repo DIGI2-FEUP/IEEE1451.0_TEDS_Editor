@@ -39,6 +39,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.ui.metaTedsTable.setColumnWidth(1, 200)
         self.ui.metaTedsTable.setRowCount(9)
         # Set field description
+        # To-Do change this function to have the same logic as loadChannelTeds
         self.ui.metaTedsTable.setItem(0, 0, QtWidgets.QTableWidgetItem(Meta_TEDS_Data_Block.UUID[2]))
         self.ui.metaTedsTable.setItem(1, 0, QtWidgets.QTableWidgetItem(Meta_TEDS_Data_Block.OholdOff[2]))
         self.ui.metaTedsTable.setItem(2, 0, QtWidgets.QTableWidgetItem(Meta_TEDS_Data_Block.SHoldOff[2]))
@@ -67,17 +68,26 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         # Set field description
         i = 0
         for field in tctdb.fields:
-            self.ui.transducerChannelTable.setItem(i, 0, QtWidgets.QTableWidgetItem(field.get_description()))
+            if field.enum :
+                # If the TEDS field domain is an enumeration, use a combobox
+                # Use the enumeration to fill the combobox with values
+                combo = QtWidgets.QComboBox()
+                for value in field.enum:
+                    combo.addItem(value.name)
+                self.ui.transducerChannelTable.setCellWidget(i,1,combo)
+            else:
+                # Else, assume the field value is an integer
+                blankItem = QtWidgets.QTableWidgetItem()
+                blankItem.setData(QtCore.Qt.EditRole, 0)
+                self.ui.transducerChannelTable.setItem(i, 1, blankItem)
+            # Use the field description to set the description cell of the table
+            item = QtWidgets.QTableWidgetItem(field.get_description())
+            # Make the description not editable
+            item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
+            self.ui.transducerChannelTable.setItem(i, 0, item)
             i += 1
 
-        for i in range(self.ui.transducerChannelTable.rowCount()):
-            item = self.ui.transducerChannelTable.item(i, 0)
-            # Make this item not editable
-            item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
-            blankItem = QtWidgets.QTableWidgetItem()
-            blankItem.setData(QtCore.Qt.EditRole, 0)
-            self.ui.transducerChannelTable.setItem(i, 1, blankItem)
-            # Callback function to catch item changes
+        # Callback function to catch item changes
 
     def generateUUID(self):
         # Data model generate new uuid
@@ -104,8 +114,6 @@ def metaTedsTableChange(item):
             meta_teds.set_test_time(item.data(QtCore.Qt.DisplayRole))
         elif item.row() == 4:
             meta_teds.set_max_chan(item.data(QtCore.Qt.DisplayRole))
-        
-
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
