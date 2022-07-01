@@ -11,6 +11,7 @@
 # * http://digi2.fe.up.pt                                                                 *
 # *****************************************************************************************
 
+from xmlrpc.client import boolean
 from PyQt5 import QtWidgets, QtCore
 import sys
 import datetime
@@ -39,10 +40,12 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         # Init the MetaTEDS table
         self.ui.metaTedsTable.setColumnWidth(0, 400)
         self.ui.metaTedsTable.setColumnWidth(1, 200)
+        self.ui.metaTedsTable.setColumnWidth(3, 10)
         self.load_teds_data_block(self.ui.metaTedsTable, meta_teds, metaTedsTableChange, None)
         # Init the ChannelTEDS table
         self.ui.transducerChannelTable.setColumnWidth(0, 400)
         self.ui.transducerChannelTable.setColumnWidth(1, 300)
+        self.ui.transducerChannelTable.setColumnWidth(3, 10)
         self.load_teds_data_block(self.ui.transducerChannelTable, channel_teds, channelTedsTableChange, channelTedsComboBoxChanged)
 
     def load_teds_data_block(self, qtable, teds_data_block, table_edit_callback, combobox_edit_callback):
@@ -51,6 +54,14 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         # Iterate all fields of the teds data block
         for i in range(0,len(teds_data_block.fields)):
             field = teds_data_block.fields[i]
+            # Fill the include column
+            if field.optional:
+                # If this is an optional TEDS field, allow to (un)check
+                checkBtn = QtWidgets.QCheckBox()
+                checkBtn.setChecked(False)
+                checkBtn.stateChanged.connect(lambda field_op=field, chkbtn=checkBtn : chkbtn_callback(field,chkbtn))
+                qtable.setCellWidget(i,2,checkBtn)
+            # Fill the value column
             if field.enum :
                 # If the TEDS field domain is an enumeration, use a combobox
                 # Use the enumeration to fill the combobox with values
@@ -70,6 +81,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
                 else:
                     blankItem.setData(QtCore.Qt.EditRole, field.get_value())
                 qtable.setItem(i, 1, blankItem)
+            # Fill the description column
             # Use the field description to set the description cell of the table
             item = QtWidgets.QTableWidgetItem(field.get_description())
             # Make the description not editable
@@ -97,6 +109,10 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         elif tab_index == 1:
             channelTedsFile = open("channel_teds_"+datetime.datetime.today().strftime('%Y-%m-%d_%H-%M-%S')+".bin", "wb")
             channelTedsFile.write(channel_teds.to_bytes())
+
+def chkbtn_callback(teds_field, chkBtn):
+    # Change if an optional teds field is included 
+    teds_field.include = boolean(chkBtn.isChecked())
 
 def metaTedsTableChange(item):
     # The item (cell) row is the same index of the TEDS field

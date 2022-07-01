@@ -11,9 +11,7 @@
 # * http://digi2.fe.up.pt                                                                 *
 # *****************************************************************************************
 
-#from ctypes import sizeof
 import enum
-import uuid
 import enum
 from numpy import  uint8, uint16, float32, frombuffer
 from teds_utils import TEDS_Data_Block, TEDS_Field, TEDS_TLV_Block, TL_OCTETS, generate_uuid
@@ -52,6 +50,7 @@ class TEDS_Identifier_Structure():
         #TO-DO
         self.tuple_length = 0x01
         self.enum = None
+        self.optional = False
 
     def get_type(self):
         return self.type
@@ -171,6 +170,84 @@ class UNITS_TEDS_Data_Block(TEDS_Data_Block):
         self.UnitsExt.set_value(0)
         self.fields.append(self.UnitsExt)
 
+class SAMPLE_TEDS_Data_Block(TEDS_Data_Block):
+
+    def __init__(self):
+        super().__init__()
+        self.DatModel = TEDS_Field(40,"DatModel","Data model",uint8,1)
+        self.DatModel.set_value_enum(self.DATA_MODELS)
+        self.DatModel.set_value(self.DATA_MODELS.BIT_SEQUENCE)
+        self.fields.append(self.DatModel)
+        self.ModLenth = TEDS_Field(41,"ModLenth","Data model length",uint8,1)
+        self.ModLenth.set_value(0)
+        self.fields.append(self.ModLenth)
+        self.SigBits = TEDS_Field(42,"SigBits","Model significant bits",uint16,2)
+        self.SigBits.set_value(0)
+        self.fields.append(self.SigBits)
+
+class DATASET_TEDS_Data_Block(TEDS_Data_Block):
+
+    # As in Table 52—Enumeration of data models
+    class DATA_MODELS(enum.IntEnum):
+        N_OCTET_INTEGER = 0
+        SINGLE_PRECISION_REAL = 1
+        DOUBLE_PRECISION_REAL = 2
+        N_OCTET_FRACTION = 3
+        BIT_SEQUENCE = 4
+        LONG_INTEGER = 5
+        LONG_FRACTION = 6
+        TIME_INSTANCE = 7
+
+    def __init__(self):
+        super().__init__()
+        self.Repeats = TEDS_Field(43,"Repeats","Maximum data repetitions",uint16,2)
+        self.Repeats.set_value(0)
+        self.fields.append(self.Repeats)
+        self.SOrigin = TEDS_Field(44,"SOrigin","Series origin",float32,4)
+        self.SOrigin.set_value(0)
+        self.fields.append(self.SOrigin)
+        self.StepSize = TEDS_Field(45,"StepSize","Series increment",float32,4)
+        self.StepSize.set_value(0)
+        self.fields.append(self.StepSize)
+        self.SUnits = TEDS_Field(46,"SUnits","Series units",UNITS_TEDS_Data_Block,11)
+        self.SUnits.set_value(UNITS_TEDS_Data_Block())
+        self.fields.append(self.SUnits)
+        self.PreTrigg = TEDS_Field(47,"PreTrigg","Maximum pre-trigger samples",uint16,2)
+        self.PreTrigg.set_value(0)
+        self.fields.append(self.PreTrigg)
+
+class SAMPLING_TEDS_Data_Block(TEDS_Data_Block):
+
+    # As in Table 54—Sampling mode capability attribute
+    # TO-DO: Each sampling mode represents a bit from lsb to msb
+    # For this to be correct all combinations must be available
+    class SAMPLING_MODE_CAPABILITY(enum.IntEnum):
+        TRIGGER_INITIATED = 1
+        FREE_RUNNING = 2
+        FREE_RUN_PRE_TRIGGER = 4
+        CONTINUOUS_SAMPLING = 8
+        IMMEDIATE_SAMPLING = 16
+        ALL_MODES = 31
+    
+    # As in Table 55—Default sampling mode attribute
+    class DEFAULT_SAMPLING_MODE(enum.IntEnum):
+        TRIGGER_INITIATED = 1
+        FREE_RUNNING = 2
+        FREE_RUN_PRE_TRIGGER = 4
+        CONTINUOUS_SAMPLING = 8
+        IMMEDIATE_OPERATION = 16
+
+    def __init__(self):
+        super().__init__()
+        self.SampMode = TEDS_Field(48,"SampMode","Sampling mode capability",uint8,1)
+        self.SampMode.set_value_enum(self.SAMPLING_MODE_CAPABILITY)
+        self.SampMode.set_value(self.SAMPLING_MODE_CAPABILITY.ALL_MODES)
+        self.fields.append(self.SampMode)
+        self.SDefault = TEDS_Field(49,"SDefault","Default sampling mode",uint8,1)
+        self.SDefault.set_value_enum(self.DEFAULT_SAMPLING_MODE)
+        self.SDefault.set_value(self.DEFAULT_SAMPLING_MODE.IMMEDIATE_OPERATION)
+        self.fields.append(self.SDefault)
+
 class TransducerChannel_TEDS_Data_Block(TEDS_Data_Block):
 
     # As in Table 49—Enumeration of calibration keys
@@ -193,17 +270,6 @@ class TransducerChannel_TEDS_Data_Block(TEDS_Data_Block):
         NO_SELF_TEST = 0
         SELF_TEST_PROVIDED = 1
 
-    # As in Table 52—Enumeration of data models
-    class DATA_MODELS(enum.IntEnum):
-        N_OCTET_INTEGER = 0
-        SINGLE_PRECISION_REAL = 1
-        DOUBLE_PRECISION_REAL = 2
-        N_OCTET_FRACTION = 3
-        BIT_SEQUENCE = 4
-        LONG_INTEGER = 5
-        LONG_FRACTION = 6
-        TIME_INSTANCE = 7
-
     # As in Table 53—Enumeration of sample time sources
     class SAMPLE_TIME_SOURCES(enum.IntEnum):
         NO_HELP = 0
@@ -212,25 +278,6 @@ class TransducerChannel_TEDS_Data_Block(TEDS_Data_Block):
         MINTERVAL = 3
         SINTERVAL = 4
         TODSENSE = 5
-
-    # As in Table 54—Sampling mode capability attribute
-    # TO-DO: Each sampling mode represents a bit from lsb to msb
-    # For this to be correct all combinations must be available
-    class SAMPLING_MODE_CAPABILITY(enum.IntEnum):
-        TRIGGER_INITIATED = 1
-        FREE_RUNNING = 2
-        FREE_RUN_PRE_TRIGGER = 4
-        CONTINUOUS_SAMPLING = 8
-        IMMEDIATE_SAMPLING = 16
-        ALL_MODES = 31
-    
-    # As in Table 55—Default sampling mode attribute
-    class DEFAULT_SAMPLING_MODE(enum.IntEnum):
-        TRIGGER_INITIATED = 1
-        FREE_RUNNING = 2
-        FREE_RUN_PRE_TRIGGER = 4
-        CONTINUOUS_SAMPLING = 8
-        IMMEDIATE_OPERATION = 16
         
     # As in Table 56—Buffered attribute
     class BUFFERED_ATTRIBUTE(enum.IntEnum):
@@ -321,35 +368,15 @@ class TransducerChannel_TEDS_Data_Block(TEDS_Data_Block):
         self.fields.append(self.SelfTest)
         self.MRange = TEDS_Field(17,"MRange","Multi-range capability",uint8,1)
         self.MRange.set_value(0)
+        self.MRange.is_optional()
         self.fields.append(self.MRange)
         # Data converter-related information — —
-        #18 Sample — —
-        self.DatModel = TEDS_Field(40,"DatModel","Data model",uint8,1)
-        self.DatModel.set_value_enum(self.DATA_MODELS)
-        self.DatModel.set_value(self.DATA_MODELS.BIT_SEQUENCE)
-        self.fields.append(self.DatModel)
-        self.ModLenth = TEDS_Field(41,"ModLenth","Data model length",uint8,1)
-        self.ModLenth.set_value(0)
-        self.fields.append(self.ModLenth)
-        self.SigBits = TEDS_Field(42,"SigBits","Model significant bits",uint16,2)
-        self.SigBits.set_value(0)
-        self.fields.append(self.SigBits)
-        #19 DataSet
-        self.Repeats = TEDS_Field(43,"Repeats","Maximum data repetitions",uint16,2)
-        self.Repeats.set_value(0)
-        self.fields.append(self.Repeats)
-        self.SOrigin = TEDS_Field(44,"SOrigin","Series origin",float32,4)
-        self.SOrigin.set_value(0)
-        self.fields.append(self.SOrigin)
-        self.StepSize = TEDS_Field(45,"StepSize","Series increment",float32,4)
-        self.StepSize.set_value(0)
-        self.fields.append(self.StepSize)
-        self.SUnits = TEDS_Field(46,"SUnits","Series units",UNITS_TEDS_Data_Block,11)
-        self.SUnits.set_value(UNITS_TEDS_Data_Block())
-        self.fields.append(self.SUnits)
-        self.PreTrigg = TEDS_Field(47,"PreTrigg","Maximum pre-trigger samples",uint16,2)
-        self.PreTrigg.set_value(0)
-        self.fields.append(self.PreTrigg)
+        self.Sample = TEDS_Field(18,"Sample","Sample definition",DATASET_TEDS_Data_Block,10)
+        self.Sample.set_value(DATASET_TEDS_Data_Block())
+        self.fields.append(self.Sample)
+        self.DataSet = TEDS_Field(19,"DataSet","DataSet information structure",DATASET_TEDS_Data_Block,55)
+        self.DataSet.set_value(DATASET_TEDS_Data_Block())
+        self.fields.append(self.DataSet)
         # Timing-related information
         self.UpdateT = TEDS_Field(20,"UpdateT","TransducerChannel update time (tu)",float32,4)
         self.UpdateT.set_value(0)
@@ -376,26 +403,26 @@ class TransducerChannel_TEDS_Data_Block(TEDS_Data_Block):
         self.TimeSrc = TEDS_Field(27,"TimeSrc","Source for the time of sample",uint8,1)
         self.TimeSrc.set_value_enum(self.SAMPLE_TIME_SOURCES)
         self.TimeSrc.set_value(self.SAMPLE_TIME_SOURCES.NO_HELP)
+        self.TimeSrc.is_optional()
         self.fields.append(self.TimeSrc)
         self.InPropDl = TEDS_Field(28,"InPropDl","Incoming propagation delay through the data transport logic",float32,4)
         self.InPropDl.set_value(0)
+        # In fact is not, if the previous field is set to "incoming"
+        # TO-DO check how to solve these dependencies
+        self.InPropDl.is_optional()
         self.fields.append(self.InPropDl)
         self.OutPropD = TEDS_Field(29,"OutPropD","Outgoing propagation delay through the data transport logic",float32,4)
         self.OutPropD.set_value(0)
+        # May be required
+        self.OutPropD.is_optional()
         self.fields.append(self.OutPropD)
         self.TSError = TEDS_Field(30,"TSError","Trigger-to-sample delay uncertainty",float32,4)
         self.TSError.set_value(0)
         self.fields.append(self.TSError)
         # Attributes
-        #31 Sampling Sampling attribute — —
-        self.SampMode = TEDS_Field(48,"SampMode","Sampling mode capability",uint8,1)
-        self.SampMode.set_value_enum(self.SAMPLING_MODE_CAPABILITY)
-        self.SampMode.set_value(self.SAMPLING_MODE_CAPABILITY.ALL_MODES)
-        self.fields.append(self.SampMode)
-        self.SDefault = TEDS_Field(49,"SDefault","Default sampling mode",uint8,1)
-        self.SDefault.set_value_enum(self.DEFAULT_SAMPLING_MODE)
-        self.SDefault.set_value(self.DEFAULT_SAMPLING_MODE.IMMEDIATE_OPERATION)
-        self.fields.append(self.SDefault)
+        self.Sampling = TEDS_Field(31,"Sampling","Sampling attribute",SAMPLING_TEDS_Data_Block,6)
+        self.Sampling.set_value(SAMPLING_TEDS_Data_Block())
+        self.fields.append(self.Sampling)
         self.DataXmit = TEDS_Field(32,"DataXmit","Data transmission attribute",uint8,1)
         self.DataXmit.set_value_enum(self.DATA_TRANSMISSION_ATTRIBUTE)
         self.DataXmit.set_value(self.DATA_TRANSMISSION_ATTRIBUTE.ONLY_WHEN_COMMANDED)
@@ -403,23 +430,29 @@ class TransducerChannel_TEDS_Data_Block(TEDS_Data_Block):
         self.Buffered = TEDS_Field(33,"Buffered","Buffered attribute",uint8,1)
         self.Buffered.set_value_enum(self.BUFFERED_ATTRIBUTE)
         self.Buffered.set_value(self.BUFFERED_ATTRIBUTE.NO_MORE_THAN_ONE_BUFFER)
+        self.Buffered.is_optional()
         self.fields.append(self.Buffered)
         self.EndOfSet = TEDS_Field(34,"EndOfSet","End-of-data-set operation attribute",uint8,1)
         self.EndOfSet.set_value_enum(self.END_OF_DATA_SET_ATTRIBUTE)
         self.EndOfSet.set_value(self.END_OF_DATA_SET_ATTRIBUTE.NOT_APPLICABLE)
+        # May not be
+        self.EndOfSet.is_optional()
         self.fields.append(self.EndOfSet)
         self.EdgeRpt = TEDS_Field(35,"EdgeRpt","Edge-to-report attribute",uint8,1)
         self.EdgeRpt.set_value_enum(self.EDGE_TO_REPORT)
         self.EdgeRpt.set_value(self.EDGE_TO_REPORT.NOT_APPLICABLE)
+        self.EdgeRpt.is_optional()
         self.fields.append(self.EdgeRpt)
         self.ActHalt = TEDS_Field(36,"ActHalt","Actuator-halt attribute",uint8,1)
         self.ActHalt.set_value_enum(self.ACTUATOR_HALT_OPERATIONS)
         self.ActHalt.set_value(self.ACTUATOR_HALT_OPERATIONS.NOT_APPLICABLE)
+        self.ActHalt.is_optional()
         self.fields.append(self.ActHalt)
         # Sensitivity
         self.Directon = TEDS_Field(37,"Directon","Sensitivity direction",float32,4)
         self.Directon.set_value_enum(self.SENSITIVITY_DIRECTION)
         self.Directon.set_value(self.SENSITIVITY_DIRECTION.NOT_APPLICABLE)
+        self.Directon.is_optional()
         self.fields.append(self.Directon)
         self.DAngles = TEDS_Field(38,"DAngles","Direction angles Two",float32,8)
         self.DAngles.set_value([0.0,0.0])
@@ -429,6 +462,7 @@ class TransducerChannel_TEDS_Data_Block(TEDS_Data_Block):
         self.ESOption = TEDS_Field(39,"ESOption","Event sensor options",uint8,1)
         self.ESOption.set_value_enum(self.EVENT_SENSOR_OPTIONS)
         self.ESOption.set_value(self.EVENT_SENSOR_OPTIONS.NOT_APPLICABLE)
+        self.ESOption.is_optional()
         self.fields.append(self.ESOption)
 
 # ba = Meta_TEDS_Data_Block()
@@ -443,8 +477,8 @@ class TransducerChannel_TEDS_Data_Block(TEDS_Data_Block):
 # ba.load_from_bytearray(barray)
 # print([ "0x%02x" % b for b in ba.to_bytes()])
 
-# ba = TransducerChannel_TEDS_Data_Block()
-# print([ "0x%02x" % b for b in ba.to_bytes()])
+ba = TransducerChannel_TEDS_Data_Block()
+print([ "0x%02x" % b for b in ba.to_bytes()])
 
 #PhyUnits = TEDS_Field(12,"PhyUnits","Physical Units",UNITS_TEDS_Data_Block,11)
 #PhyUnits.set_value(UNITS_TEDS_Data_Block())

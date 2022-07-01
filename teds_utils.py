@@ -108,6 +108,9 @@ class TEDS_Data_Block():
     def to_bytes(self):
         barray = bytearray(b'')
         for field in self.fields:
+            if field.optional and field.include == False:
+                # If the teds field is optional, and not set for inclusion, skip it
+                continue
             try:
                 barray.append(field.get_TLV().get_bytes())
             except:
@@ -141,6 +144,7 @@ class TEDS_Field():
         self.tlv = None
         self.enum = None
         self.optional = False
+        self.include = False
         self.value_to_data_type = None
 
     def get_type(self):
