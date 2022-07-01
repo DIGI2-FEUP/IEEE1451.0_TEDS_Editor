@@ -14,16 +14,16 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_editorMainWindow(object):
     def setupUi(self, editorMainWindow):
         editorMainWindow.setObjectName("editorMainWindow")
-        editorMainWindow.resize(753, 619)
+        editorMainWindow.resize(896, 619)
         self.centralwidget = QtWidgets.QWidget(editorMainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.metaTedsTab_2 = QtWidgets.QTabWidget(self.centralwidget)
-        self.metaTedsTab_2.setGeometry(QtCore.QRect(4, 0, 731, 561))
+        self.metaTedsTab_2.setGeometry(QtCore.QRect(4, 0, 891, 561))
         self.metaTedsTab_2.setObjectName("metaTedsTab_2")
         self.metaTedsTab = QtWidgets.QWidget()
         self.metaTedsTab.setObjectName("metaTedsTab")
         self.metaTedsTable = QtWidgets.QTableWidget(self.metaTedsTab)
-        self.metaTedsTable.setGeometry(QtCore.QRect(10, 10, 701, 461))
+        self.metaTedsTable.setGeometry(QtCore.QRect(10, 10, 861, 461))
         self.metaTedsTable.setColumnCount(3)
         self.metaTedsTable.setObjectName("metaTedsTable")
         self.metaTedsTable.setRowCount(0)
@@ -40,7 +40,7 @@ class Ui_editorMainWindow(object):
         self.channelTedsTab_2 = QtWidgets.QWidget()
         self.channelTedsTab_2.setObjectName("channelTedsTab_2")
         self.transducerChannelTable = QtWidgets.QTableWidget(self.channelTedsTab_2)
-        self.transducerChannelTable.setGeometry(QtCore.QRect(10, 11, 701, 461))
+        self.transducerChannelTable.setGeometry(QtCore.QRect(10, 11, 861, 461))
         self.transducerChannelTable.setColumnCount(3)
         self.transducerChannelTable.setObjectName("transducerChannelTable")
         self.transducerChannelTable.setRowCount(0)
@@ -53,7 +53,7 @@ class Ui_editorMainWindow(object):
         self.metaTedsTab_2.addTab(self.channelTedsTab_2, "")
         editorMainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(editorMainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 753, 26))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 896, 26))
         self.menubar.setObjectName("menubar")
         self.menuFile = QtWidgets.QMenu(self.menubar)
         self.menuFile.setObjectName("menuFile")
@@ -73,7 +73,7 @@ class Ui_editorMainWindow(object):
         self.menubar.addAction(self.menuFile.menuAction())
 
         self.retranslateUi(editorMainWindow)
-        self.metaTedsTab_2.setCurrentIndex(0)
+        self.metaTedsTab_2.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(editorMainWindow)
 
     def retranslateUi(self, editorMainWindow):
