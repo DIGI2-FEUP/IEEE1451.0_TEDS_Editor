@@ -14,7 +14,7 @@
 import uuid
 from sys import getsizeof
 import numpy as np
-from numpy import float32, uint16, int16, uint32, int32, uint8, int8, frombuffer
+from numpy import float32, isin, uint16, int16, uint32, int32, uint8, int8, frombuffer
 
 # Type 4, UUID, Globally Unique Identifier UUID, size 10
 # TO-DO, implement as in the standard definition
@@ -35,47 +35,55 @@ to_int16 = lambda value : int16(value)
 to_uint32 = lambda value : uint32(value)
 to_int32 = lambda value : int32(value)
 to_float32 = lambda value : float32(value)
-# list_to_uint8 = lambda flist : np.array(flist,dtype="uint8").tobytes()
-# list_to_int8 = lambda flist : np.array(flist,dtype="int8").tobytes()
-# list_to_uint16 = lambda flist : np.array(flist,dtype="uint16").tobytes()
-# list_to_int16 = lambda flist : np.array(flist,dtype="int16").tobytes()
-# list_to_uint32 = lambda flist : np.array(flist,dtype="uint32").tobytes()
-# list_to_int32 = lambda flist : np.array(flist,dtype="int32").tobytes()
-list_to_type = lambda vtype, vlist : np.array(vlist,dtype=vtype).tobytes()
+list_to_uint8 = lambda flist : np.array(flist,dtype="uint8").tobytes()
+list_to_int8 = lambda flist : np.array(flist,dtype="int8").tobytes()
+list_to_uint16 = lambda flist : np.array(flist,dtype="uint16").tobytes()
+list_to_int16 = lambda flist : np.array(flist,dtype="int16").tobytes()
+list_to_uint32 = lambda flist : np.array(flist,dtype="uint32").tobytes()
+list_to_int32 = lambda flist : np.array(flist,dtype="int32").tobytes()
+list_to_float32 = lambda flist : np.array(flist,dtype="float32").tobytes()
 # Infer what conversion function is most appropriate to a TEDS Field
 def infer_conversion_function(teds_field):
     dtype_octets = 0
-    dtype_conversion = None
+    scalar_conversion_function = None
+    list_conversion_function = None
 
     if teds_field.data_type == uint8:
         dtype_octets = 1
-        dtype_conversion = to_uint8
+        scalar_conversion_function = to_uint8
+        list_conversion_function = list_to_uint8
     elif teds_field.data_type == int8:
         dtype_octets = 1
-        dtype_conversion = to_int8
+        scalar_conversion_function = to_int8
+        list_conversion_function = list_to_int8
     elif teds_field.data_type == uint16:
         dtype_octets = 2
-        dtype_conversion = to_uint16
+        scalar_conversion_function = to_uint16
+        list_conversion_function = list_to_uint16
     elif teds_field.data_type == int16:
         dtype_octets = 2
-        dtype_conversion = to_int16
+        scalar_conversion_function = to_int16
+        list_conversion_function = list_to_int16
     elif teds_field.data_type == uint32:
         dtype_octets = 4
-        dtype_conversion = to_uint32
+        scalar_conversion_function = to_uint32
+        list_conversion_function = list_to_uint32
     elif teds_field.data_type == int32:
         dtype_octets = 4
-        dtype_conversion = to_int32
+        scalar_conversion_function = to_int32
+        list_conversion_function = list_to_int32
     elif teds_field.data_type == float32:
         dtype_octets = 4
-        dtype_conversion = to_float32
+        scalar_conversion_function = to_float32
+        list_conversion_function = list_to_float32
 
     if dtype_octets < teds_field.get_value_length():
         # If the data type octets are less than the field value octets
         # Then assume the value is a list with N values
         # N = field_octets/dtype_octets (TO-DO)
-        teds_field.value_to_data_type = lambda vlist, vtype=teds_field.data_type.dtype : np.array(vlist,dtype=vtype).tobytes()
+        teds_field.value_to_data_type = list_conversion_function
     else:
-        teds_field.value_to_data_type = dtype_conversion
+        teds_field.value_to_data_type = scalar_conversion_function
 
 
 # Number of octets in Type, Length of a TEDS TLV field
@@ -169,8 +177,8 @@ class TEDS_Field():
     # If the function fails, try to cast it
     # If given value has the correct type, do not apply conversion
     def set_value(self, value):
-        print(type(value))
-        print([self.data_type, bytes, bytearray])
+        # print(type(value))
+        # print([self.data_type, bytes, bytearray])
         if type(value) not in [self.data_type, bytes, bytearray]:
             try:
                 # If a conversion function is not known, try to define it
@@ -188,12 +196,11 @@ class TEDS_Field():
         return self.value
 
     def get_TLV(self):
-        if self.tlv == None:
-            self.tlv = TEDS_TLV_Block(self)
+        self.tlv = TEDS_TLV_Block(self)
         return self.tlv
 
     def get_bytes(self):
-        return self.get_TLV.get_bytes()
+        return self.get_TLV().get_bytes()
 
     def load_bytes(self, barray):
         try:
@@ -225,19 +232,31 @@ class TEDS_TLV_Block():
     #TO-DO correct this method
     def get_bytes(self):
         barr = bytearray(b'')
-        try:
-            barr.extend(self.type)
-        except:
-            barr.append(self.type)
-        try:
-            barr.extend(self.length)
-        except:
+        barr.append(self.type)
+        # If it is another TEDS data block, use specific approach
+        if isinstance(self.teds_field.get_value(), TEDS_Data_Block):
+            # Get the data block bytes
+            subarray = self.teds_field.get_value().to_bytes()
+            # This field size is the number of octets in the block + 2
+            self.length = uint8(len(subarray))
             barr.append(self.length)
-        try:
-            barr.extend(self.teds_field.get_value())
-        except:
-            barr.append(self.teds_field.get_value())
-        if len(barr) != self.length + TL_OCTETS:
-            raise ValueError("TEDS field type: {}, expected encoding length is: {}, should be: {}"
-                .format(self.type, len(barr)-TL_OCTETS, self.length))
+            try:
+                barr.extend(subarray)
+            except:
+                barr.append(subarray)
+        else:
+            try:
+                barr.extend(self.length)
+            except:
+                barr.append(self.length)
+            try:
+                if isinstance(self.teds_field.get_value(), type(np.array)):
+                    barr.extend(self.teds_field.get_value().to_bytes())
+                else:
+                    barr.extend(self.teds_field.get_value())
+            except:                    
+                barr.append(self.teds_field.get_value())
+            if len(barr) != self.length + TL_OCTETS:
+                raise ValueError("TEDS field type: {}, expected encoding length is: {}, should be: {}"
+                    .format(self.type, len(barr)-TL_OCTETS, self.length))
         return barr
