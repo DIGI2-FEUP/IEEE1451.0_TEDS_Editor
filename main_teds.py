@@ -11,6 +11,7 @@
 # * http://digi2.fe.up.pt                                                                 *
 # *****************************************************************************************
 
+from time import sleep
 from xmlrpc.client import boolean
 from PyQt5 import QtWidgets, QtCore
 import sys
@@ -18,11 +19,14 @@ import datetime
 from teds_editor import Ui_editorMainWindow
 from  teds_data_model import TEDS_ACCESS_CODES, Meta_TEDS_Data_Block, Meta_TEDS_Data_Block, TransducerChannel_TEDS_Data_Block
 import teds_utils
+from teds_sub_editor import Ui_auxWindow
 
 # Create meta teds model
 meta_teds = Meta_TEDS_Data_Block()
 # Create channel teds model
 channel_teds = TransducerChannel_TEDS_Data_Block()
+# Auxiliar teds data block pointer
+auxiliar_teds = None
 
 class ApplicationWindow(QtWidgets.QMainWindow):
 
@@ -41,55 +45,25 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.ui.metaTedsTable.setColumnWidth(0, 400)
         self.ui.metaTedsTable.setColumnWidth(1, 200)
         self.ui.metaTedsTable.setColumnWidth(3, 10)
-        self.load_teds_data_block(self.ui.metaTedsTable, meta_teds, metaTedsTableChange, None)
+        load_teds_data_block(self.ui.metaTedsTable, meta_teds, metaTedsTableChange, None, True)
         # Init the ChannelTEDS table
         self.ui.transducerChannelTable.setColumnWidth(0, 400)
         self.ui.transducerChannelTable.setColumnWidth(1, 300)
         self.ui.transducerChannelTable.setColumnWidth(3, 10)
-        self.load_teds_data_block(self.ui.transducerChannelTable, channel_teds, channelTedsTableChange, channelTedsComboBoxChanged)
+        load_teds_data_block(self.ui.transducerChannelTable, channel_teds, channelTedsTableChange, channelTedsComboBoxChanged, True)
 
-    def load_teds_data_block(self, qtable, teds_data_block, table_edit_callback, combobox_edit_callback):
-        # Set the table number of rows
-        qtable.setRowCount(len(teds_data_block.fields))
-        # Iterate all fields of the teds data block
-        for i in range(0,len(teds_data_block.fields)):
-            field = teds_data_block.fields[i]
-            # Fill the include column
-            if field.optional:
-                # If this is an optional TEDS field, allow to (un)check
-                checkBtn = QtWidgets.QCheckBox()
-                checkBtn.setChecked(False)
-                checkBtn.stateChanged.connect(lambda field_op=field, chkbtn=checkBtn : chkbtn_callback(field,chkbtn))
-                qtable.setCellWidget(i,2,checkBtn)
-            # Fill the value column
-            if field.enum :
-                # If the TEDS field domain is an enumeration, use a combobox
-                # Use the enumeration to fill the combobox with values
-                combo = QtWidgets.QComboBox()                
-                combo.currentTextChanged.connect(lambda value, index=i: combobox_edit_callback(value, index))
-                for value in field.enum:
-                    combo.addItem(value.name)
-                qtable.setCellWidget(i,1,combo)
-            else:
-                # Else, assume the field value is an integer
-                blankItem = QtWidgets.QTableWidgetItem()
-                if i==0:
-                    # Fisrt item is the teds identification field
-                    # Make it not editable
-                    blankItem.setData(QtCore.Qt.EditRole, TEDS_ACCESS_CODES(field.teds_class).name)
-                    blankItem.setFlags(blankItem.flags() ^ QtCore.Qt.ItemIsEditable)
-                else:
-                    blankItem.setData(QtCore.Qt.EditRole, field.get_value())
-                qtable.setItem(i, 1, blankItem)
-            # Fill the description column
-            # Use the field description to set the description cell of the table
-            item = QtWidgets.QTableWidgetItem(field.get_description())
-            # Make the description not editable
-            item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
-            qtable.setItem(i, 0, item)
-
-        # Callback function to catch changes in the table items
-        qtable.itemChanged.connect(table_edit_callback)
+    # Open auxiliar window
+    def openAuxWindow(self, teds_field):
+        self.auxwindow = QtWidgets.QMainWindow()
+        self.auxui = Ui_auxWindow()
+        self.auxui.setupUi(self.auxwindow)
+        self.auxwindow.show()
+        self.auxui.tableWidget.setColumnWidth(0, 400)
+        self.auxui.tableWidget.setColumnWidth(1, 210)
+        self.auxui.tableWidget.setColumnWidth(3, 10)
+        global auxiliar_teds
+        auxiliar_teds = teds_field.get_value()
+        load_teds_data_block(self.auxui.tableWidget, auxiliar_teds, auxiliarTableChange, auxiliarTedsComboBoxChanged, False)
 
     def generateUUID(self):
         # Data model generate new uuid
@@ -134,8 +108,74 @@ def channelTedsTableChange(item):
     channel_teds.fields[item.row()].set_value(item.data(QtCore.Qt.DisplayRole))
     # print(channel_teds.fields[item.row()].value)
 
+# Callback function for auxiliar TEDS comboboxes
+def auxiliarTedsComboBoxChanged(value, index):
+    # Get the new value from the enum that defines the TEDS field domain
+    new_value = auxiliar_teds.fields[index].enum[value].value
+    # Set the new value in the TEDS field
+    auxiliar_teds.fields[index].set_value(new_value)
+    # print(channel_teds.fields[index].value)
+
+# Callback function for auxiliar table
+def auxiliarTableChange(item):
+    # The item (cell) row is the same index of the TEDS field
+    auxiliar_teds.fields[item.row()].set_value(item.data(QtCore.Qt.DisplayRole))
+    # print(channel_teds.fields[item.row()].value)
+
+def load_teds_data_block(qtable, teds_data_block, table_edit_callback, combobox_edit_callback, mainWindow):
+    # Set the table number of rows
+    qtable.setRowCount(len(teds_data_block.fields))
+    # Iterate all fields of the teds data block
+    for i in range(0,len(teds_data_block.fields)):
+        field = teds_data_block.fields[i]
+        # Fill the include column
+        if field.optional:
+            # If this is an optional TEDS field, allow to (un)check
+            checkBtn = QtWidgets.QCheckBox()
+            checkBtn.setChecked(False)
+            checkBtn.stateChanged.connect(lambda value, field_op=field, chkbtn=checkBtn : chkbtn_callback(field_op,chkbtn))
+            qtable.setCellWidget(i,2,checkBtn)
+        # Fill the value column
+        if field.enum :
+            # If the TEDS field domain is an enumeration, use a combobox
+            # Use the enumeration to fill the combobox with values
+            combo = QtWidgets.QComboBox()                
+            combo.currentTextChanged.connect(lambda value, index=i: combobox_edit_callback(value, index))
+            for value in field.enum:
+                combo.addItem(value.name)
+            qtable.setCellWidget(i,1,combo)
+        elif isinstance(field.get_value(), teds_utils.TEDS_Data_Block):
+            # If the field data type is a teds data block 
+            # Add a button to open auxiliar window to fill that block
+            pushBtn = QtWidgets.QPushButton()
+            #.setGeometry(QtCore.QRect(10, 480, 93, 41))
+            pushBtn.setText("Edit")
+            pushBtn.clicked.connect(lambda val, tfield=field : application.openAuxWindow(tfield))
+            qtable.setCellWidget(i,1,pushBtn)
+        else:
+            # Else, assume the field value is an integer
+            blankItem = QtWidgets.QTableWidgetItem()
+            if i==0 and mainWindow:
+                # Fisrt item is the teds identification field
+                # Make it not editable
+                blankItem.setData(QtCore.Qt.EditRole, TEDS_ACCESS_CODES(field.teds_class).name)
+                blankItem.setFlags(blankItem.flags() ^ QtCore.Qt.ItemIsEditable)
+            else:
+                blankItem.setData(QtCore.Qt.EditRole, field.get_value())
+            qtable.setItem(i, 1, blankItem)
+        # Fill the description column
+        # Use the field description to set the description cell of the table
+        item = QtWidgets.QTableWidgetItem(field.get_description())
+        # Make the description not editable
+        item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
+        qtable.setItem(i, 0, item)
+
+    # Callback function to catch changes in the table items
+    qtable.itemChanged.connect(table_edit_callback)
+
 def main():
     app = QtWidgets.QApplication(sys.argv)
+    global application
     application = ApplicationWindow()
     application.show()
     sys.exit(app.exec_())

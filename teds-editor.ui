@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>662</width>
-    <height>535</height>
+    <width>892</width>
+    <height>610</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,12 +19,12 @@
      <rect>
       <x>4</x>
       <y>0</y>
-      <width>651</width>
-      <height>481</height>
+      <width>891</width>
+      <height>561</height>
      </rect>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="metaTedsTab">
      <attribute name="title">
@@ -35,9 +35,12 @@
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>621</width>
-        <height>371</height>
+        <width>861</width>
+        <height>461</height>
        </rect>
+      </property>
+      <property name="columnCount">
+       <number>3</number>
       </property>
       <column>
        <property name="text">
@@ -49,12 +52,17 @@
         <string>Value</string>
        </property>
       </column>
+      <column>
+       <property name="text">
+        <string>Include</string>
+       </property>
+      </column>
      </widget>
      <widget class="QPushButton" name="pushButton">
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>400</y>
+        <y>480</y>
         <width>93</width>
         <height>41</height>
        </rect>
@@ -66,8 +74,36 @@
     </widget>
     <widget class="QWidget" name="channelTedsTab_2">
      <attribute name="title">
-      <string>Tab 2</string>
+      <string>TransducerChannel TEDS</string>
      </attribute>
+     <widget class="QTableWidget" name="transducerChannelTable">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>11</y>
+        <width>861</width>
+        <height>461</height>
+       </rect>
+      </property>
+      <property name="columnCount">
+       <number>3</number>
+      </property>
+      <column>
+       <property name="text">
+        <string>Field</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>Value</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>Include</string>
+       </property>
+      </column>
+     </widget>
     </widget>
    </widget>
   </widget>
@@ -76,7 +112,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>662</width>
+     <width>892</width>
      <height>26</height>
     </rect>
    </property>
@@ -86,6 +122,7 @@
     </property>
     <addaction name="separator"/>
     <addaction name="actionSave_bin"/>
+    <addaction name="actionLoad_bin"/>
    </widget>
    <addaction name="menuFile"/>
   </widget>
@@ -98,6 +135,11 @@
   <action name="actionSabe_xml">
    <property name="text">
     <string>Sabe .xml</string>
+   </property>
+  </action>
+  <action name="actionLoad_bin">
+   <property name="text">
+    <string>Load .bin</string>
    </property>
   </action>
  </widget>

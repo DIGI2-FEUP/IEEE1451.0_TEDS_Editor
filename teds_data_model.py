@@ -126,7 +126,7 @@ class Meta_TEDS_Data_Block(TEDS_Data_Block):
 class UNITS_TEDS_Data_Block(TEDS_Data_Block):
 
     # As in Table 3—Physical Units interpretation
-    class PHY_UNITS_INTR:
+    class PHY_UNITS_INTR(enum.IntEnum):
         PUI_SI_UNITS = 0
         PUI_RATIO_SI_UNITS = 1
         PUI_LOG10_SI_UNITS = 2
@@ -138,39 +138,61 @@ class UNITS_TEDS_Data_Block(TEDS_Data_Block):
         super().__init__()
         self.UnitType = TEDS_Field(50,"UnitType","Physical Units interpretation enumeration",uint8,1)
         self.UnitType.set_value(self.PHY_UNITS_INTR.PUI_SI_UNITS)
+        self.UnitType.set_value_enum(self.PHY_UNITS_INTR)
         self.fields.append(self.UnitType)
         self.Radians = TEDS_Field(51,"Radians","The exponent for Radians",uint8,1)
         self.Radians.set_value(128)
+        self.Radians.is_optional()
         self.fields.append(self.Radians)
         self.SterRad = TEDS_Field(52,"SterRad","The exponent for Steradians",uint8,1)
         self.SterRad.set_value(128)
+        self.SterRad.is_optional()
         self.fields.append(self.SterRad)
         self.Meters = TEDS_Field(53,"Meters","The exponent for Meters",uint8,1)
         self.Meters.set_value(128)
+        self.Meters.is_optional()
         self.fields.append(self.Meters)
         self.Kilogram = TEDS_Field(54,"Kilogram","The exponent for Kilograms",uint8,1)
         self.Kilogram.set_value(128)
+        self.Kilogram.is_optional()
         self.fields.append(self.Kilogram)
         self.Seconds = TEDS_Field(55,"Seconds","The exponent for Seconds",uint8,1)
         self.Seconds.set_value(128)
+        self.Seconds.is_optional()
         self.fields.append(self.Seconds)
         self.Amperes = TEDS_Field(56,"Amperes","The exponent for Amperes",uint8,1)
         self.Amperes.set_value(128)
+        self.Amperes.is_optional()
         self.fields.append(self.Amperes)
         self.Kelvins = TEDS_Field(57,"Kelvins","The exponent for Kelvins",uint8,1)
         self.Kelvins.set_value(128)
+        self.Kelvins.is_optional()
         self.fields.append(self.Kelvins)
         self.Moles = TEDS_Field(58,"Moles","The exponent for Moles",uint8,1)
         self.Moles.set_value(128)
+        self.Moles.is_optional()
         self.fields.append(self.Moles)
         self.Candelas = TEDS_Field(59,"Candelas","The exponent for Candelas",uint8,1)
         self.Candelas.set_value(128)
+        self.Candelas.is_optional()
         self.fields.append(self.Candelas)
         self.UnitsExt = TEDS_Field(60,"UnitsExt","TEDS access code for units extension",uint8,1)
         self.UnitsExt.set_value(0)
+        self.UnitsExt.is_optional()
         self.fields.append(self.UnitsExt)
 
 class SAMPLE_TEDS_Data_Block(TEDS_Data_Block):
+
+    # As in Table 52—Enumeration of data models
+    class DATA_MODELS(enum.IntEnum):
+        N_OCTET_INTEGER = 0
+        SINGLE_PRECISION_REAL = 1
+        DOUBLE_PRECISION_REAL = 2
+        N_OCTET_FRACTION = 3
+        BIT_SEQUENCE = 4
+        LONG_INTEGER = 5
+        LONG_FRACTION = 6
+        TIME_INSTANCE = 7
 
     def __init__(self):
         super().__init__()
@@ -186,17 +208,6 @@ class SAMPLE_TEDS_Data_Block(TEDS_Data_Block):
         self.fields.append(self.SigBits)
 
 class DATASET_TEDS_Data_Block(TEDS_Data_Block):
-
-    # As in Table 52—Enumeration of data models
-    class DATA_MODELS(enum.IntEnum):
-        N_OCTET_INTEGER = 0
-        SINGLE_PRECISION_REAL = 1
-        DOUBLE_PRECISION_REAL = 2
-        N_OCTET_FRACTION = 3
-        BIT_SEQUENCE = 4
-        LONG_INTEGER = 5
-        LONG_FRACTION = 6
-        TIME_INSTANCE = 7
 
     def __init__(self):
         super().__init__()

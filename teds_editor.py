@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_editorMainWindow(object):
     def setupUi(self, editorMainWindow):
         editorMainWindow.setObjectName("editorMainWindow")
-        editorMainWindow.resize(896, 619)
+        editorMainWindow.resize(892, 610)
         self.centralwidget = QtWidgets.QWidget(editorMainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.metaTedsTab_2 = QtWidgets.QTabWidget(self.centralwidget)
@@ -53,7 +53,7 @@ class Ui_editorMainWindow(object):
         self.metaTedsTab_2.addTab(self.channelTedsTab_2, "")
         editorMainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(editorMainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 896, 26))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 892, 26))
         self.menubar.setObjectName("menubar")
         self.menuFile = QtWidgets.QMenu(self.menubar)
         self.menuFile.setObjectName("menuFile")
