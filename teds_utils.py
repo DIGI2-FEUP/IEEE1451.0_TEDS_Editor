@@ -65,13 +65,13 @@ uint32_to_bytes = lambda value : bytearray(pack(">I", value))
 int32_to_bytes = lambda value : bytearray(pack(">i", value)) 
 float32_to_bytes = lambda value : bytearray(pack(">f", value)) 
 # Functions to convert list of types to list of bytes
-list_of_uint8_to_bytes = lambda flist : b''.join([pack(">B",flist[x:x+1]) for x in range(0,len(flist))])
-list_of_int8_to_bytes = lambda flist : b''.join([pack(">b",flist[x:x+1]) for x in range(0,len(flist))])
-list_of_uint16_to_bytes = lambda flist : b''.join([pack(">H",flist[x:x+2]) for x in range(0,len(flist),2)])
-list_of_int16_to_bytes = lambda flist : b''.join([pack(">h",flist[x:x+2]) for x in range(0,len(flist),2)])
-list_of_uint32_to_bytes = lambda flist : b''.join([pack(">I",flist[x:x+4]) for x in range(0,len(flist),4)])
-list_of_int32_to_bytes = lambda flist : b''.join([pack(">i",flist[x:x+4]) for x in range(0,len(flist),4)])
-list_of_float32_to_bytes = lambda flist : b''.join([pack(">f",flist[x:x+4]) for x in range(0,len(flist),4)])
+list_of_uint8_to_bytes = lambda flist : b''.join([pack(">B",x) for x in flist])
+list_of_int8_to_bytes = lambda flist : b''.join([pack(">b",x) for x in flist])
+list_of_uint16_to_bytes = lambda flist : b''.join([pack(">H",x) for x in flist])
+list_of_int16_to_bytes = lambda flist : b''.join([pack(">h",x) for x in flist])
+list_of_uint32_to_bytes = lambda flist : b''.join([pack(">I",x) for x in flist])
+list_of_int32_to_bytes = lambda flist : b''.join([pack(">i",x) for x in flist])
+list_of_float32_to_bytes = lambda flist : b''.join([pack(">f",x) for x in flist])
 # Functions to convert bytes to list of type
 byte_list_to_uint8 = lambda flist : [unpack('>B',flist[x:x+1])[0] for x in range(0,len(flist))]
 byte_list_to_int8 = lambda flist : [unpack('>b',flist[x:x+1])[0] for x in range(0,len(flist))]

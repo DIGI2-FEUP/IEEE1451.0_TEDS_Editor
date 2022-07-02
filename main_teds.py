@@ -148,7 +148,8 @@ def metaTedsTableChange(item):
     if item.row() != 0:
         # ignore UUID field changes
         data = item.data(QtCore.Qt.DisplayRole)
-        meta_teds.fields[item.row()].set_value_from_string(data)
+        if data != "":
+            meta_teds.fields[item.row()].set_value_from_string(data)
 
 # Callback function for the channel TEDS comboboxes
 def channelTedsComboBoxChanged(value, index):
@@ -163,7 +164,9 @@ def channelTedsComboBoxChanged(value, index):
 def channelTedsTableChange(item):
     # The item (cell) row is the same index of the TEDS field
     if item.row() > 0:
-        channel_teds.fields[item.row()].set_value_from_string(item.data(QtCore.Qt.DisplayRole))
+        data = item.data(QtCore.Qt.DisplayRole)
+        if data != "":
+            channel_teds.fields[item.row()].set_value_from_string(data)
     # print(channel_teds.fields[item.row()].value)
 
 # Callback function for auxiliar TEDS comboboxes
