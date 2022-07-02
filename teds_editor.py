@@ -73,7 +73,7 @@ class Ui_editorMainWindow(object):
         self.menubar.addAction(self.menuFile.menuAction())
 
         self.retranslateUi(editorMainWindow)
-        self.metaTedsTab_2.setCurrentIndex(1)
+        self.metaTedsTab_2.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(editorMainWindow)
 
     def retranslateUi(self, editorMainWindow):
