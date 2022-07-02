@@ -49,6 +49,7 @@ class TEDS_Identifier_Structure():
         self.version = 0x01
         #TO-DO
         self.tuple_length = 0x01
+        self.name = "Header"
         self.enum = None
         self.optional = False
 
@@ -59,7 +60,7 @@ class TEDS_Identifier_Structure():
         return "TEDS Identification Header"
 
     def get_TLV(self):
-        return TEDS_TLV_Block(self)
+        return TEDS_TLV_Block(self.type, self.length, self.get_bytes())
 
     def get_bytes(self):
         return bytes([self.family, self.teds_class, self.version, self.tuple_length])
@@ -76,15 +77,30 @@ class TEDS_Identifier_Structure():
         return self.get_value_length()+TL_OCTETS
 
     def load_bytes(self, barray):
+        if isinstance(barray, TEDS_TLV_Block):
+            self.load_bytes_from_TLV(barray)
+        else:
+            try:
+                assert type(barray) is bytearray
+                assert len(barray) == self.get_total_length()
+                assert barray[0] == self.type
+                assert barray[1] == self.length
+                assert barray[2] == self.family
+                assert barray[3] == self.teds_class
+                assert barray[4] == self.version
+                assert barray[5] == self.tuple_length
+            except:
+                raise ValueError("TEDS Identifier Structure, loaded bytes don't match.")
+
+    def load_bytes_from_TLV(self, tlv_block):
         try:
-            assert type(barray) is bytearray
-            assert len(barray) == self.get_total_length()
-            assert barray[0] == self.type
-            assert barray[1] == self.length
-            assert barray[2] == self.family
-            assert barray[3] == self.teds_class
-            assert barray[4] == self.version
-            assert barray[5] == self.tuple_length
+            assert tlv_block.field_type == self.type
+            assert tlv_block.field_length == self.length
+            barray = tlv_block.field_value
+            assert barray[0] == self.family
+            assert barray[1] == self.teds_class
+            assert barray[2] == self.version
+            assert barray[3] == self.tuple_length
         except:
             raise ValueError("TEDS Identifier Structure, loaded bytes don't match.")
 
@@ -100,20 +116,20 @@ class Meta_TEDS_Data_Block(TEDS_Data_Block):
         self.teds_id = TEDS_Identifier_Structure(TEDS_ACCESS_CODES.MetaTEDS)
         self.fields.append(self.teds_id)
         #Globally Unique Identifier UUID 10
-        self.uuid_field = TEDS_Field(3, "TEDSID", "Globally Unique Identifier", bytes,  10)
-        self.uuid_field.set_value(generate_uuid())
+        self.uuid_field = TEDS_Field(4, "TEDSID", "Globally Unique Identifier", uint8,  10)
+        self.uuid_field.set_value_from_bytes(generate_uuid())
         self.fields.append(self.uuid_field)
         #OholdOff Operational time-out float32 4
         self.oholdoff_field = TEDS_Field(10, "OholdOff", "Operational time-out", float32, 4)
-        self.oholdoff_field.set_value(0)
+        self.oholdoff_field.set_value(0.0)
         self.fields.append(self.oholdoff_field)
         #SHoldOff Slow-access time-out float32 4
         self.sholdoff_field = TEDS_Field(11, "SholdOff", "Slow-access time-out", float32, 4)
-        self.sholdoff_field.set_value(0)
+        self.sholdoff_field.set_value(0.0)
         self.fields.append(self.sholdoff_field)
         #TestTime Self-Test Time float32
         self.test_time_field = TEDS_Field(12, "TestTime", "Self-Test Time", float32, 4)
-        self.test_time_field.set_value(0)
+        self.test_time_field.set_value(0.0)
         self.fields.append(self.test_time_field)
         #MaxChan Number of implemented TransducerChannels uint16 2
         self.max_chan_field = TEDS_Field(13, "MaxChan", "Number of implemented TransducerChannels", uint16, 2)
@@ -215,10 +231,10 @@ class DATASET_TEDS_Data_Block(TEDS_Data_Block):
         self.Repeats.set_value(0)
         self.fields.append(self.Repeats)
         self.SOrigin = TEDS_Field(44,"SOrigin","Series origin",float32,4)
-        self.SOrigin.set_value(0)
+        self.SOrigin.set_value(0.0)
         self.fields.append(self.SOrigin)
         self.StepSize = TEDS_Field(45,"StepSize","Series increment",float32,4)
-        self.StepSize.set_value(0)
+        self.StepSize.set_value(0.0)
         self.fields.append(self.StepSize)
         self.SUnits = TEDS_Field(46,"SUnits","Series units",UNITS_TEDS_Data_Block,11)
         self.SUnits.set_value(UNITS_TEDS_Data_Block())
@@ -365,13 +381,13 @@ class TransducerChannel_TEDS_Data_Block(TEDS_Data_Block):
         self.PhyUnits.set_value(UNITS_TEDS_Data_Block())
         self.fields.append(self.PhyUnits)
         self.LowLimit = TEDS_Field(13,"LowLimit","Design operational lower range limit",float32,4)
-        self.LowLimit.set_value(0)
+        self.LowLimit.set_value(0.0)
         self.fields.append(self.LowLimit)
         self.HiLimit = TEDS_Field(14,"HiLimit","Design operational upper range limit",float32,4)
-        self.HiLimit.set_value(0)
+        self.HiLimit.set_value(0.0)
         self.fields.append(self.HiLimit)
         self.OError = TEDS_Field(15,"OError","Worst-case uncertainty",float32,4)
-        self.OError.set_value(0)
+        self.OError.set_value(0.0)
         self.fields.append(self.OError)
         self.SelfTest = TEDS_Field(16,"SelfTest","Self-test key",uint8,1)
         self.SelfTest.set_value_enum(self.SELF_TEST_KEY)
@@ -390,25 +406,25 @@ class TransducerChannel_TEDS_Data_Block(TEDS_Data_Block):
         self.fields.append(self.DataSet)
         # Timing-related information
         self.UpdateT = TEDS_Field(20,"UpdateT","TransducerChannel update time (tu)",float32,4)
-        self.UpdateT.set_value(0)
+        self.UpdateT.set_value(0.0)
         self.fields.append(self.UpdateT)
         self.WSetupT = TEDS_Field(21,"WSetupT","TransducerChannel write setup time (tws)",float32,4)
-        self.WSetupT.set_value(0)
+        self.WSetupT.set_value(0.0)
         self.fields.append(self.WSetupT)
         self.RSetupT = TEDS_Field(22,"RSetupT","TransducerChannel read setup time (trs)",float32,4)
-        self.RSetupT.set_value(0)
+        self.RSetupT.set_value(0.0)
         self.fields.append(self.RSetupT)
         self.SPeriod = TEDS_Field(23,"SPeriod","TransducerChannel sampling period (tsp)",float32,4)
-        self.SPeriod.set_value(0)
+        self.SPeriod.set_value(0.0)
         self.fields.append(self.SPeriod)
         self.WarmUpT = TEDS_Field(24,"WarmUpT","TransducerChannel warm-up time",float32,4)
-        self.WarmUpT.set_value(0)
+        self.WarmUpT.set_value(0.0)
         self.fields.append(self.WarmUpT)
         self.RDelayT = TEDS_Field(25,"RDelayT","TransducerChannel read delay time (tch)",float32,4)
-        self.RDelayT.set_value(0)
+        self.RDelayT.set_value(0.0)
         self.fields.append(self.RDelayT)
         self.TestTime = TEDS_Field(26,"TestTime","TransducerChannel self-test time requirement",float32,4)
-        self.TestTime.set_value(0)
+        self.TestTime.set_value(0.0)
         self.fields.append(self.TestTime)
         # Time of the sample information
         self.TimeSrc = TEDS_Field(27,"TimeSrc","Source for the time of sample",uint8,1)
@@ -417,18 +433,18 @@ class TransducerChannel_TEDS_Data_Block(TEDS_Data_Block):
         self.TimeSrc.is_optional()
         self.fields.append(self.TimeSrc)
         self.InPropDl = TEDS_Field(28,"InPropDl","Incoming propagation delay through the data transport logic",float32,4)
-        self.InPropDl.set_value(0)
+        self.InPropDl.set_value(0.0)
         # In fact is not, if the previous field is set to "incoming"
         # TO-DO check how to solve these dependencies
         self.InPropDl.is_optional()
         self.fields.append(self.InPropDl)
         self.OutPropD = TEDS_Field(29,"OutPropD","Outgoing propagation delay through the data transport logic",float32,4)
-        self.OutPropD.set_value(0)
+        self.OutPropD.set_value(0.0)
         # May be required
         self.OutPropD.is_optional()
         self.fields.append(self.OutPropD)
         self.TSError = TEDS_Field(30,"TSError","Trigger-to-sample delay uncertainty",float32,4)
-        self.TSError.set_value(0)
+        self.TSError.set_value(0.0)
         self.fields.append(self.TSError)
         # Attributes
         self.Sampling = TEDS_Field(31,"Sampling","Sampling attribute",SAMPLING_TEDS_Data_Block,6)
@@ -460,7 +476,7 @@ class TransducerChannel_TEDS_Data_Block(TEDS_Data_Block):
         self.ActHalt.is_optional()
         self.fields.append(self.ActHalt)
         # Sensitivity
-        self.Directon = TEDS_Field(37,"Directon","Sensitivity direction",float32,4)
+        self.Directon = TEDS_Field(37,"Directon","Sensitivity direction",uint8,1)
         self.Directon.set_value_enum(self.SENSITIVITY_DIRECTION)
         self.Directon.set_value(self.SENSITIVITY_DIRECTION.NOT_APPLICABLE)
         self.Directon.is_optional()
@@ -488,9 +504,10 @@ class TransducerChannel_TEDS_Data_Block(TEDS_Data_Block):
 # ba.load_from_bytearray(barray)
 # print([ "0x%02x" % b for b in ba.to_bytes()])
 
-ba = TransducerChannel_TEDS_Data_Block()
-print([ "0x%02x" % b for b in ba.to_bytes()])
+# ba = TransducerChannel_TEDS_Data_Block()
+# print([ "0x%02x" % b for b in ba.to_bytes()])
 
 #PhyUnits = TEDS_Field(12,"PhyUnits","Physical Units",UNITS_TEDS_Data_Block,11)
 #PhyUnits.set_value(UNITS_TEDS_Data_Block())
 #print([ "0x%02x" % b for b in PhyUnits.get_bytes()])
+# [ lst[x:x+4] for x in range(0,len(lst),4)]
