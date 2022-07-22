@@ -11,6 +11,7 @@
 # * http://digi2.fe.up.pt                                                                 *
 # *****************************************************************************************
 
+from ctypes import sizeof
 from dataclasses import fields
 from operator import length_hint
 import uuid
@@ -27,9 +28,13 @@ def generate_uuid(north = None, west = None, year = None, date = None, sequence 
 
 def calc_length(data_block):
     return getsizeof(data_block, 0)
-
-def calc_checksum(self):
-    pass
+def calc_checksum(byte_array):
+    
+    sum=0
+    for byte in byte_array:
+        sum += byte
+    
+    return 0xFFFF - (sum%0xFFFF)
 
 # Utility functions to convert data
 # Functions to convert a string to simple type
@@ -177,6 +182,14 @@ class TEDS_Data_Block():
     def __init__(self):
         # List to hold references to all teds fields
         self.fields = []
+
+    def to_bytes_with_length_and_checksum(self):
+        barray = self.to_bytes()
+        barray = uint32_to_bytes((len(barray)+2)) + barray
+        checksum = calc_checksum(barray)
+        barray = barray + uint16_to_bytes(uint16(checksum))
+        return barray
+
 
     def to_bytes(self):
         barray = bytearray(b'')

@@ -126,6 +126,7 @@ class Meta_TEDS_Data_Block(TEDS_Data_Block):
         #SHoldOff Slow-access time-out float32 4
         self.sholdoff_field = TEDS_Field(11, "SholdOff", "Slow-access time-out", float32, 4)
         self.sholdoff_field.set_value(0.0)
+        self.sholdoff_field.is_optional()
         self.fields.append(self.sholdoff_field)
         #TestTime Self-Test Time float32
         self.test_time_field = TEDS_Field(12, "TestTime", "Self-Test Time", float32, 4)
