@@ -13,7 +13,8 @@
 
 import enum
 import enum
-from numpy import  uint8, uint16, float32, frombuffer
+from numpy import uint32, uint64, uint8, uint16, float32, frombuffer
+from pandas import array
 from teds_utils import TEDS_Data_Block, TEDS_Field, TEDS_TLV_Block, TL_OCTETS, generate_uuid
 
 #TEDS Access Codes for the TEDS defined by this standard
@@ -119,6 +120,10 @@ class Meta_TEDS_Data_Block(TEDS_Data_Block):
         self.uuid_field = TEDS_Field(4, "TEDSID", "Globally Unique Identifier", uint8,  10)
         self.uuid_field.set_value_from_bytes(generate_uuid())
         self.fields.append(self.uuid_field)
+
+        #self.uuid_field_2 = TEDS_Field(4, "TEDSID", "Globally Unique Identifier", UUID_TEDS_Data_Block,  10)
+        #self.uuid_field_2.set_value(UUID_TEDS_Data_Block())
+        #self.fields.append(self.uuid_field_2)
         #OholdOff Operational time-out float32 4
         self.oholdoff_field = TEDS_Field(10, "OholdOff", "Operational time-out", float32, 4)
         self.oholdoff_field.set_value(0.0)
@@ -138,8 +143,72 @@ class Meta_TEDS_Data_Block(TEDS_Data_Block):
         self.fields.append(self.max_chan_field)
 
     def set_uuid(self, uuid):
-        self.uuid_field.set_value(uuid)
+        self.uuid_field_2.set_value(uuid)
 
+'''class UUID_TEDS_Data_Block(TEDS_Data_Block):
+    def __init__(self):
+        super().__init__()
+        self.UUID = TEDS_Field(4,"UUID","Unique Universal Identifier",uint8,10)
+        self.UUID.set_value([])
+        self.fields.append(self.UUID)
+        self.UUID.include = True
+        self.North = TEDS_Field(0,"North","North(1)/South(0)",uint8,1)
+        self.North.set_value(0)
+        self.North.include = False
+        self.fields.append(self.North)
+        self.Latitude = TEDS_Field(0,"Latitude", "Latitude in arcdegrees",uint32,4)
+        self.Latitude.set_value(0)
+        self.Latitude.include = False
+        self.fields.append(self.Latitude)
+        self.East = TEDS_Field(0,"East","East(1)/West(0)",uint8,1)
+        self.East.set_value(0)
+        self.East.include = False
+        self.fields.append(self.East)
+        self.Longitude = TEDS_Field(0,"Longitude", "Longitude in arcdegrees",uint32,4)
+        self.Longitude.set_value(0)
+        self.Longitude.include = False
+        self.fields.append(self.Longitude)
+        self.Manufacturer = TEDS_Field(0,"Manufacturer", "Manufacturer",uint8,1)
+        self.Manufacturer.include = False
+        self.Manufacturer.set_value(0)
+        self.fields.append(self.Manufacturer)
+        self.Year = TEDS_Field(0,"Year", "Year",uint16,2)
+        self.Year.set_value(0)
+        self.Year.include = False
+        self.fields.append(self.Year)
+        self.DateSequence = TEDS_Field(0,"Date/Sequence", "Date/Sequence",uint32,4)
+        self.DateSequence.set_value(0)
+        self.DateSequence.include = False
+        self.fields.append(self.DateSequence)
+       
+    def set_value(self,uuid):
+        self.UUID.set_value(uuid)
+    
+    def calcUUID(self):
+        value = 0
+        value = value| (self.North.get_value() & 0x1)
+        value = value | (self.Latitude.get_value() & 0xFFFFF) << 1 
+        value = value | (self.East.get_value() & 0x1) << 21
+        value = value | (self.Longitude.get_value() & 0x3FFFFF) << 22
+        value = value | (self.Manufacturer.get_value() & 0xF) << 42
+        value = value | (self.Year.get_value() & 0xFFF) << 46
+        value = value | (self.DateSequence.get_value() & 0x3F) << 58
+        
+        self.UUID.set_value(uint64(value).tobytes().)
+
+    def update(self):
+        self.calcUUID()
+
+    def to_bytes(self):
+        barray = bytearray(b'')
+        try:
+            barray.append(self.UUID.get_TLV().get_bytes())
+        except:
+            barray.extend(self.UUID.get_TLV().get_bytes())
+        return barray
+
+
+'''
 class UNITS_TEDS_Data_Block(TEDS_Data_Block):
 
     # As in Table 3—Physical Units interpretation

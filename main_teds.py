@@ -45,6 +45,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.ui.pushButton.clicked.connect(self.generateUUID)
         # Register handle for Save .bin action
         self.ui.actionSave_bin.triggered.connect(self.saveBin)
+        self.ui.actionSave_bin_Checksummed.triggered.connect(self.saveBinChecksummed)
         self.ui.actionLoad_bin.triggered.connect(self.loadFile)
         # Init the MetaTEDS table
         self.ui.metaTedsTable.setColumnWidth(0, 400)
@@ -69,6 +70,9 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         global auxiliar_teds
         auxiliar_teds = teds_field.get_value()
         load_teds_data_block(self.auxui.tableWidget, auxiliar_teds, auxiliarTableChange, auxiliarTedsComboBoxChanged, False)
+        #self.auxwindow.closeEvent(auxiliar_teds.update())
+
+        
 
     def generateUUID(self):
         # Data model generate new uuid
@@ -88,6 +92,16 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         elif tab_index == 1:
             channelTedsFile = open("channel_teds_"+datetime.datetime.today().strftime('%Y-%m-%d_%H-%M-%S')+".bin", "wb")
             channelTedsFile.write(channel_teds.to_bytes())
+
+    def saveBinChecksummed(self):
+        # Name the file with uuid from meta teds
+        tab_index = self.ui.metaTedsTab_2.currentIndex()
+        if  tab_index == 0:
+            metaTedsFile = open("meta_teds_"+datetime.datetime.today().strftime('%Y-%m-%d_%H-%M-%S')+".bin", "wb")
+            metaTedsFile.write(meta_teds.to_bytes_with_length_and_checksum())
+        elif tab_index == 1:
+            channelTedsFile = open("channel_teds_"+datetime.datetime.today().strftime('%Y-%m-%d_%H-%M-%S')+".bin", "wb")
+            channelTedsFile.write(channel_teds.to_bytes_with_length_and_checksum())
 
     def loadFile(self):
         # File name from dialog box
@@ -178,10 +192,12 @@ def auxiliarTedsComboBoxChanged(value, index):
         auxiliar_teds.fields[index].set_value(new_value)
         # print(channel_teds.fields[index].value)
 
+
 # Callback function for auxiliar table
 def auxiliarTableChange(item):
     if lock:
         # The item (cell) row is the same index of the TEDS field
+        auxiliar_teds.update()
         auxiliar_teds.fields[item.row()].set_value_from_string(item.data(QtCore.Qt.DisplayRole))
         # print(channel_teds.fields[item.row()].value)
 
@@ -242,6 +258,7 @@ def load_teds_data_block(qtable, teds_data_block, table_edit_callback, combobox_
 
     # Callback function to catch changes in the table items
     qtable.itemChanged.connect(table_edit_callback)
+    
 
 def main():
     app = QtWidgets.QApplication(sys.argv)

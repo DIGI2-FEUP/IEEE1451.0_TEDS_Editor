@@ -17,7 +17,7 @@ from operator import length_hint
 import uuid
 from sys import getsizeof, stdout
 import numpy as np
-from numpy import float32, uint16, int16, uint32, int32, uint8, int8, frombuffer
+from numpy import uint64 ,float32, uint16, int16, uint32, int32, uint8, int8, frombuffer
 from struct import unpack, pack
 from json import loads
 
@@ -44,6 +44,7 @@ string_to_uint16 = lambda value : uint16(value)
 string_to_int16 = lambda value : int16(value)
 string_to_uint32 = lambda value : uint32(value)
 string_to_int32 = lambda value : int32(value)
+string_to_uint64 = lambda value : uint64(value)
 string_to_float32 = lambda value : float32(value)
 # Functions to convert a literal string list to list of type
 string_list_to_uint8 = lambda flist : np.array(loads(flist),dtype="uint8")[0]
@@ -53,6 +54,8 @@ string_list_to_int16 = lambda flist : np.array(loads(flist),dtype="int16")[0]
 string_list_to_uint32 = lambda flist : np.array(loads(flist),dtype="uint32")[0]
 string_list_to_int32 = lambda flist : np.array(loads(flist),dtype="int32")[0]
 string_list_to_float32 = lambda flist : np.array(loads(flist),dtype="float")[0]
+string_list_to_uint64 = lambda flist : np.array(loads(flist),dtype="uint64")[0]
+
 # Functions to convert bytes to simple type
 bytes_to_uint8 = lambda value : unpack('>B', value)[0]
 bytes_to_int8 = lambda value : unpack('>b', value)[0]
@@ -61,6 +64,8 @@ bytes_to_int16 = lambda value : unpack('>h', value)[0]
 bytes_to_uint32 = lambda value : unpack('>I', value)[0]
 bytes_to_int32 = lambda value : unpack('>i', value)[0]
 bytes_to_float32 = lambda value : unpack('>f', value)[0]
+bytes_to_uint64 = lambda value : unpack('>L', value)[0]
+
 # Functions to convert simple type to bytes
 uint8_to_bytes = lambda value : bytearray(pack(">B", value))
 int8_to_bytes = lambda value : bytearray(pack(">b", value))
@@ -68,6 +73,7 @@ uint16_to_bytes = lambda value : bytearray(pack(">H", value))
 int16_to_bytes = lambda value : bytearray(pack(">h", value))
 uint32_to_bytes = lambda value : bytearray(pack(">I", value)) 
 int32_to_bytes = lambda value : bytearray(pack(">i", value)) 
+uint64_to_bytes = lambda value : bytearray(pack(">L", value)) 
 float32_to_bytes = lambda value : bytearray(pack(">f", value)) 
 # Functions to convert list of types to list of bytes
 list_of_uint8_to_bytes = lambda flist : b''.join([pack(">B",x) for x in flist])
@@ -76,6 +82,7 @@ list_of_uint16_to_bytes = lambda flist : b''.join([pack(">H",x) for x in flist])
 list_of_int16_to_bytes = lambda flist : b''.join([pack(">h",x) for x in flist])
 list_of_uint32_to_bytes = lambda flist : b''.join([pack(">I",x) for x in flist])
 list_of_int32_to_bytes = lambda flist : b''.join([pack(">i",x) for x in flist])
+list_of_uint64_to_bytes = lambda flist : b''.join([pack(">L",x) for x in flist])
 list_of_float32_to_bytes = lambda flist : b''.join([pack(">f",x) for x in flist])
 # Functions to convert bytes to list of type
 byte_list_to_uint8 = lambda flist : [unpack('>B',flist[x:x+1])[0] for x in range(0,len(flist))]
@@ -84,6 +91,7 @@ byte_list_to_uint16 = lambda flist : [unpack('>H',flist[x:x+2])[0] for x in rang
 byte_list_to_int16 = lambda flist : [unpack('>h',flist[x:x+2])[0] for x in range(0,len(flist),2)]
 byte_list_to_uint32 = lambda flist : [unpack('>I',flist[x:x+4])[0] for x in range(0,len(flist),4)]
 byte_list_to_int32 = lambda flist : [unpack('>i',flist[x:x+4])[0] for x in range(0,len(flist),4)]
+byte_list_to_uint64 = lambda flist : [unpack('>L',flist[x:x+4])[0] for x in range(0,len(flist),8)]
 byte_list_to_float32 = lambda flist : [unpack('>f',flist[x:x+4])[0] for x in range(0,len(flist),4)]
 
 # Infer what conversion function is most appropriate to a TEDS Field
@@ -153,6 +161,16 @@ def infer_conversion_functions(teds_field):
             teds_field.value_from_bytes = bytes_to_int32
             teds_field.value_from_string = string_to_int32
             teds_field.value_as_bytes = int32_to_bytes
+    elif teds_field.data_type == uint64:
+        teds_field.dtype_octets = 8
+        if teds_field.dtype_octets < teds_field.get_value_length():
+            teds_field.value_from_bytes = byte_list_to_uint64
+            teds_field.value_from_string = string_list_to_uint64
+            teds_field.value_as_bytes = list_of_uint64_to_bytes
+        else:
+            teds_field.value_from_bytes = bytes_to_uint64
+            teds_field.value_from_string = string_to_uint64
+            teds_field.value_as_bytes = uint64_to_bytes
     elif teds_field.data_type == float32:
         teds_field.dtype_octets = 4
         if teds_field.dtype_octets < teds_field.get_value_length():
@@ -343,6 +361,9 @@ class TEDS_Field():
         except:
             # print("TEDS Field: {}, loaded bytes don't match.".format(self.name))
             raise ValueError("TEDS Field: {}, loaded bytes don't match.".format(self.name))
+
+    def update(self):
+        pass
 
 # All TEDS prepared by a transducer manufacturer use a Type/Length/Value (TLV) data structure.
 # The “Type“ field is a 1 octet tag that identifies the TLV, similar in function to HTML or XML tags. 
